@@ -7,7 +7,7 @@ Being in main folder you can type
 ```console
 make
 ```
-to create `build` folder and build everything into it. To run one of executables you have to go to folder build and run
+to create `build` folder and build everything into it. To run one of executables you have to go to folder `build` and run
 ```console
 mpirun -np [num_procs] [executable]
 ```
