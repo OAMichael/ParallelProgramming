@@ -1,6 +1,6 @@
 CC = mpicc
 
-all: FirstWeek
+all: FirstWeek SecondWeekStar
 
 FirstWeek:
 	mkdir -p ./build/
@@ -10,6 +10,9 @@ FirstWeek:
 	$(CC) ./Week_1/1.3_LoopSend.c 		-o ./build/1.3_LoopSend.exe
 
 
+SecondWeekStar:
+	mkdir -p ./build/
+	$(CC) ./Week_2_STAR/2.STAR_Exp.c -lgmp -o ./build/2.STAR_Exp.exe
 
 .SILENT clean:
 	rm -rf */*.exe
