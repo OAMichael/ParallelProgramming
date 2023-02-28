@@ -2,37 +2,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "gmp/gmp.h"
 
 
-typedef struct factorial {
-    int n;
-    mpz_t n_fact;
-} factorial_t;
 
 
+int CalculateMaxN(int N) {
 
+    double x_curr = 3.0;
+    double x_prev = x_curr;
 
-factorial_t CalculateMaxN(int N) {
-    factorial_t tmp;
+    // x_{n + 1} = x_n - f(x_n)/f'(x_n),
+    // where f(x) = x*ln(x) - x - N*ln(10)
+    do {
+        x_prev = x_curr;
+        x_curr = (x_curr + N * log(10)) / log(x_curr);
+    } while(fabs(x_curr - x_prev) > 1.0);
 
-    mpz_init_set_ui(tmp.n_fact, 1);
-
-    mpz_t inv_epsilon;
-    mpz_init_set_ui(inv_epsilon, 10);
-    mpz_pow_ui(inv_epsilon, inv_epsilon, N);
-
-    int n = 0;
-    while(mpz_cmp(inv_epsilon, tmp.n_fact) > 0) {
-        n++;
-        mpz_mul_ui(tmp.n_fact, tmp.n_fact, n);
-    }
-
-    mpz_clear(inv_epsilon);
-
-    tmp.n = n;
-
-    return tmp;
+    return (int)ceil(x_curr);
 }
 
 
@@ -48,7 +36,6 @@ int main(int argc, char* argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 
-
     // In case of wrong input
     if(argc < 2) {
         if(!rank)
@@ -62,37 +49,41 @@ int main(int argc, char* argv[]) {
     // Passing number of accurate digits by argv[1]
     const int N = atoi(argv[1]);
 
-    factorial_t MaxFact;
+
+    // Calculate to which term we must calculate for given accuracy and send to all processes this information
+    // Still valid if we have only 1 process
+    int MaxFact;
     if(rank == commsize - 1) {
         MaxFact = CalculateMaxN(N);
 
         for(int i = 0; i < commsize - 1; i++) {
-            MPI_Send(&MaxFact.n, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&MaxFact, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
         }
 
     }
     else {
-        MPI_Recv(&MaxFact.n, 1, MPI_INT, commsize - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(&MaxFact, 1, MPI_INT, commsize - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
 
 
     // Distributing starts and ends of summing among processes
-    const int diff  = MaxFact.n / commsize;
+    const int diff  = MaxFact / commsize;
     int start = 1 + diff * rank;
     int end   = 1 + diff * (rank + 1);
 
-    if(MaxFact.n % commsize) {
-        if(rank < MaxFact.n % commsize) {
+    if(MaxFact % commsize) {
+        if(rank < MaxFact % commsize) {
             start += rank;
             end += rank + 1;
         }
         else {
-            start += (MaxFact.n % commsize);
-            end   += (MaxFact.n % commsize);
+            start += (MaxFact % commsize);
+            end   += (MaxFact % commsize);
         }
     }
 
 
+    // Main algorithm
     mpz_t LocCurrFact;
     mpz_init_set_ui(LocCurrFact, 1);
 
@@ -103,31 +94,25 @@ int main(int argc, char* argv[]) {
         mpz_mul_ui(LocCurrFact, LocCurrFact, i);
         mpz_add(LocSum, LocSum, LocCurrFact);
     }
-    mpz_clear(LocCurrFact);
 
 
     mpz_t RankMaxFact;
 
-    if(rank < commsize - 1)
-        mpz_init_set_ui(RankMaxFact, 1);
-    else
-        mpz_init_set(RankMaxFact, MaxFact.n_fact);
+    mpz_init_set_ui(RankMaxFact, 1);
 
-    // For all except last processes we calculate RankMaxFact =  start * (start + 1) * ... * (end - 2) * (end - 1)
-    // for future sending factorial to NEXT process
-    if(rank < commsize - 1) {
-        for(int i = start; i < end; i++) {
-            mpz_mul_ui(RankMaxFact, RankMaxFact, i);
-        }
-    }
+    // For all we calculate RankMaxFact = start * (start + 1) * ... * (end - 2) * (end - 1)
+    mpz_mul_ui(RankMaxFact, LocCurrFact, start);
+    mpz_clear(LocCurrFact);
 
 
     char* FactStrRecv = NULL;
 
-    if(rank && rank < commsize - 1) {
+    if(rank) {
         // For all except first processes we receive largest factorial of PREVIOUS process
         MPI_Status status;
         int recvLength;
+
+        // Use MPI_Probe and MPI_Get_count to obtain length of passed number
         MPI_Probe(rank - 1, 0, MPI_COMM_WORLD, &status);
 
         MPI_Get_count(&status, MPI_CHAR, &recvLength);
@@ -148,16 +133,16 @@ int main(int argc, char* argv[]) {
         free(FactStrRecv);
     }
 
-
-
-
-
-    if(rank < commsize - 2) {
+    // Send NEXT process largest factorial of THIS process
+    // Still valid if we have only 1 process
+    if(rank < commsize - 1) {
         char* FactStrSend = mpz_get_str(NULL, 10, RankMaxFact);
         MPI_Send(FactStrSend, strlen(FactStrSend) + 1, MPI_CHAR, rank + 1, 0, MPI_COMM_WORLD);
     }
 
     // By now all processes have value of their maximum factorial stored in RankMaxFact
+    // Convert all integer sums to floating point ones and perform division by largest factorial
+    // to get true sum of THIS process
     mpf_set_default_prec(64 + 8 * N);
 
     mpf_t LocSum_float;
@@ -170,34 +155,32 @@ int main(int argc, char* argv[]) {
 
     mpf_div(LocSum_float, LocSum_float, RankMaxFact_float);
     
-
     mpz_clear(RankMaxFact);
     mpz_clear(LocSum);
-    if(rank == commsize - 1)
-        mpz_clear(MaxFact.n_fact);
 
     mpf_clear(RankMaxFact_float);
     
     // Send sums from all processes to 0's process
     if(rank) {
 
-        char *buf = (char*)calloc(N + 4, sizeof(char));
+        char *buf = (char*)calloc(N + 5, sizeof(char));
 
-        char* formatStr = (char*)calloc(4 + strlen(argv[1]) + 1, sizeof(char));
-        snprintf(formatStr, 4 + strlen(argv[1]) + 1, "%%.%dFf", N + 2);
+        char* formatStr = (char*)calloc(5 + strlen(argv[1]) + 1, sizeof(char));
+        snprintf(formatStr, 5 + strlen(argv[1]) + 1, "%%.%dFf", N + 2);
 
-        gmp_snprintf(buf, N + 4, formatStr, LocSum_float);
+        gmp_snprintf(buf, N + 5, formatStr, LocSum_float);
         free(formatStr);
 
         MPI_Send(buf, strlen(buf) + 1, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
-
         free(buf);
     }
     
     if(!rank) {
+        // Add 1 to first process because we need to take into account 0! = 1
         mpf_add_ui(LocSum_float, LocSum_float, 1);
 
-        // Now aggregate all sums from all processes
+        // Now accumulate all sums from all processes
+        // Still valid if we have only 1 process
         for(int i = 1; i < commsize; i++) {
 
             MPI_Status status;
@@ -210,7 +193,6 @@ int main(int argc, char* argv[]) {
 
             MPI_Recv(strSum_i, recvLength, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-            
             mpf_t Sum_i;
             mpf_init_set_str(Sum_i, strSum_i, 10);
             free(strSum_i);
@@ -221,14 +203,21 @@ int main(int argc, char* argv[]) {
         }
 
         
-        char* formatStr = (char*)calloc(6 + strlen(argv[1]) + 1, sizeof(char));
+        // Make nice looking format string. strlen(argv[1]) + 1 because N can be 999, so N + 1 = 1000
+        // Allocate [14 + strlen(argv[1])] bytes to contain format string: 
+        // %%.      -- 3 bytes
+        // %d       -- itoa(N + 1) <= strlen(argv[1]) + 1
+        // Ff       -- 2 bytes
+        // \b \b\n  -- 2 + 1 + 2 + 2 = 7 bytes
+        // Total: <= 13 + strlen(argv[1])
+        // +1 for '\0'
+        char* formatStr = (char*)calloc(14 + strlen(argv[1]), sizeof(char));
 
-        snprintf(formatStr, 6 + strlen(argv[1]), "%%.%dFf\n", N);
+        snprintf(formatStr, 13 + strlen(argv[1]), "%%.%dFf\b \b\n", N + 1);
         gmp_printf(formatStr, LocSum_float);
 
         free(formatStr);
         mpf_clear(LocSum_float);
-        
     }
 
     // Finalizing MPI
