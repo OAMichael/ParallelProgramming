@@ -8,7 +8,7 @@
 
 
 
-int CalculateMaxN(int N) {
+int CalculateMaxN(const int N) {
 
     double x_curr = 3.0;
     double x_prev = x_curr;
@@ -137,7 +137,8 @@ int main(int argc, char* argv[]) {
     // By now all processes have value of their maximum factorial stored in LocCurrFact
     // Convert all integer sums to floating point ones and perform division by largest factorial
     // to get true sum of THIS process
-    mpf_set_default_prec(64 + 8 * N);
+    // Precision chosen to be 64 + [ln(10)/ln(2) * N] bits
+    mpf_set_default_prec(64 + ceil(3.33 * N));
 
     mpf_t LocSum_float;
     mpf_init(LocSum_float);
@@ -157,7 +158,7 @@ int main(int argc, char* argv[]) {
     // Send sums from all processes to 0's process
     if(rank) {
 
-        char *buf = (char*)calloc(N + 5, sizeof(char));
+        char* buf = (char*)calloc(N + 5, sizeof(char));
 
         char* formatStr = (char*)calloc(5 + strlen(argv[1]) + 1, sizeof(char));
         snprintf(formatStr, 5 + strlen(argv[1]) + 1, "%%.%dFf", N + 2);
