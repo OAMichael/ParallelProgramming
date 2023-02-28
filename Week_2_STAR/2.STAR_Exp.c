@@ -85,27 +85,21 @@ int main(int argc, char* argv[]) {
 
     // Main algorithm
     mpz_t LocCurrFact;
-    mpz_init_set_ui(LocCurrFact, 1);
+    mpz_init_set_ui(LocCurrFact, end - 1);
 
     mpz_t LocSum;
-    mpz_init_set_ui(LocSum, 1);
+    mpz_init_set_ui(LocSum, end);
 
-    for(int i = end - 1; i > start; i--) {
+    
+    for(int i = end - 2; i > start; i--) {
         mpz_mul_ui(LocCurrFact, LocCurrFact, i);
         mpz_add(LocSum, LocSum, LocCurrFact);
     }
+    
+    // For all we calculate LocCurrFact = start * (start + 1) * ... * (end - 2) * (end - 1)
+    mpz_mul_ui(LocCurrFact, LocCurrFact, start);
 
 
-    mpz_t RankMaxFact;
-
-    mpz_init_set_ui(RankMaxFact, 1);
-
-    // For all we calculate RankMaxFact = start * (start + 1) * ... * (end - 2) * (end - 1)
-    mpz_mul_ui(RankMaxFact, LocCurrFact, start);
-    mpz_clear(LocCurrFact);
-
-
-    char* FactStrRecv = NULL;
 
     if(rank) {
         // For all except first processes we receive largest factorial of PREVIOUS process
@@ -117,7 +111,7 @@ int main(int argc, char* argv[]) {
 
         MPI_Get_count(&status, MPI_CHAR, &recvLength);
 
-        FactStrRecv = (char*)calloc(recvLength, sizeof(char));
+        char* FactStrRecv = (char*)calloc(recvLength, sizeof(char));
 
         MPI_Recv(FactStrRecv, recvLength, MPI_CHAR, rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
@@ -127,7 +121,7 @@ int main(int argc, char* argv[]) {
 
         // If THIS process is not last, multiply largest factorial of PREVIOUS process by [start * (start + 1) * ... * (end - 2) * (end - 1)]
         // of THIS process to obtain largest factorial of THIS process
-        mpz_mul(RankMaxFact, RankMaxFact, RankFactFromStr);
+        mpz_mul(LocCurrFact, LocCurrFact, RankFactFromStr);
 
         mpz_clear(RankFactFromStr);
         free(FactStrRecv);
@@ -136,11 +130,11 @@ int main(int argc, char* argv[]) {
     // Send NEXT process largest factorial of THIS process
     // Still valid if we have only 1 process
     if(rank < commsize - 1) {
-        char* FactStrSend = mpz_get_str(NULL, 10, RankMaxFact);
+        char* FactStrSend = mpz_get_str(NULL, 10, LocCurrFact);
         MPI_Send(FactStrSend, strlen(FactStrSend) + 1, MPI_CHAR, rank + 1, 0, MPI_COMM_WORLD);
     }
 
-    // By now all processes have value of their maximum factorial stored in RankMaxFact
+    // By now all processes have value of their maximum factorial stored in LocCurrFact
     // Convert all integer sums to floating point ones and perform division by largest factorial
     // to get true sum of THIS process
     mpf_set_default_prec(64 + 8 * N);
@@ -151,11 +145,11 @@ int main(int argc, char* argv[]) {
 
     mpf_t RankMaxFact_float;
     mpf_init(RankMaxFact_float);
-    mpf_set_z(RankMaxFact_float, RankMaxFact);
+    mpf_set_z(RankMaxFact_float, LocCurrFact);
 
     mpf_div(LocSum_float, LocSum_float, RankMaxFact_float);
     
-    mpz_clear(RankMaxFact);
+    mpz_clear(LocCurrFact);
     mpz_clear(LocSum);
 
     mpf_clear(RankMaxFact_float);
