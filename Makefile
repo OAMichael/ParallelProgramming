@@ -12,7 +12,7 @@ FirstWeek:
 
 SecondWeekStar:
 	mkdir -p ./build/
-	$(CC) ./Week_2_STAR/2.STAR_Exp.c -lm -lgmp -o ./build/2.STAR_Exp.exe
+	$(CC) ./Week_2_STAR/2.STAR_Exp.c -O3 -lm -lgmp -o ./build/2.STAR_Exp.exe
 
 .SILENT clean:
 	rm -rf */*.exe

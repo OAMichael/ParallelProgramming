@@ -3,12 +3,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include "gmp/gmp.h"
 
 
 
 
-int CalculateMaxN(const int N) {
+static inline int CalculateMaxN(const int N) {
 
     double x_curr = 3.0;
     double x_prev = x_curr;
@@ -53,18 +55,10 @@ int main(int argc, char* argv[]) {
     // Calculate to which term we must calculate for given accuracy and send to all processes this information
     // Still valid if we have only 1 process
     int MaxFact;
-    if(rank == commsize - 1) {
+    if(rank == commsize - 1)
         MaxFact = CalculateMaxN(N);
 
-        for(int i = 0; i < commsize - 1; i++) {
-            MPI_Send(&MaxFact, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
-        }
-
-    }
-    else {
-        MPI_Recv(&MaxFact, 1, MPI_INT, commsize - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    }
-
+    MPI_Bcast(&MaxFact, 1, MPI_INT, commsize - 1, MPI_COMM_WORLD);
 
     // Distributing starts and ends of summing among processes
     const int diff  = MaxFact / commsize;
@@ -83,22 +77,95 @@ int main(int argc, char* argv[]) {
     }
 
 
+    uint64_t a = end - 1;
+    bool isOverflow = false;
+    
     // Main algorithm
     mpz_t LocCurrFact;
-    mpz_init_set_ui(LocCurrFact, end - 1);
+    mpz_init_set_ui(LocCurrFact, 1);
 
     mpz_t LocSum;
-    mpz_init_set_ui(LocSum, end);
+    //mpz_init_set_ui(LocSum, end);
+    //mpz_init(LocSum);
+    mpz_init_set_ui(LocSum, 0);
 
-    
+    uint64_t LocSumUint = end;
+
+
+
+
     for(int i = end - 2; i > start; i--) {
-        mpz_mul_ui(LocCurrFact, LocCurrFact, i);
-        mpz_add(LocSum, LocSum, LocCurrFact);
+        if(a > UINT64_MAX / (uint64_t)i) {
+            mpz_addmul_ui(LocSum, LocCurrFact, LocSumUint);
+            mpz_mul_ui(LocCurrFact, LocCurrFact, a);
+            a = (uint64_t)i;
+            LocSumUint = a;
+        }
+        else {
+            a *= (uint64_t)i;
+            if(LocSumUint > UINT64_MAX - a) {
+                mpz_addmul_ui(LocSum, LocCurrFact, LocSumUint);
+                LocSumUint = 0;
+            }
+            else
+                LocSumUint += a;
+        }
     }
+    mpz_addmul_ui(LocSum, LocCurrFact, LocSumUint);
+    mpz_mul_ui(LocCurrFact, LocCurrFact, a);
+
+                
+
+
+
+    /*
+    for(int i = end - 2; i > start; i--) {
+        if(a > UINT64_MAX / (uint64_t)i) {
+            mpz_mul_ui(LocCurrFact, LocCurrFact, a);
+            mpz_addmul_ui(LocSum, LocCurrFact, i);
+            a = (uint64_t)i;
+        }
+        else {
+            a *= (uint64_t)i;
+            mpz_addmul_ui(LocSum, LocCurrFact, a);
+        }
+        mpz_mul_ui(LocCurrFact, LocCurrFact, i);
+    }
+    mpz_mul_ui(LocCurrFact, LocCurrFact, a);
+    */
     
+    /*
+    for(int i = end - 2; i > start; i--) {
+        if(!isOverflow) {
+            if(a > UINT64_MAX / (uint64_t)i) {
+                isOverflow = true;
+                mpz_set_ui(LocCurrFact, a);
+                //mpz_set_ui(LocSum, LocSumUint);
+
+                mpz_mul_ui(LocCurrFact, LocCurrFact, i);
+                mpz_add(LocSum, LocSum, LocCurrFact);
+
+
+                //mpz_addmul_ui(LocSum, LocCurrFact, i);
+            }   
+            else {
+                a *= (uint64_t)i;
+                //LocSumUint += a;
+                mpz_add_ui(LocSum, LocSum, a);
+            }
+        }
+        else {
+            mpz_mul_ui(LocCurrFact, LocCurrFact, i);
+            mpz_add(LocSum, LocSum, LocCurrFact);
+        }
+    }
+    */
+
+    //if(!isOverflow)
+        //mpz_set_ui(LocCurrFact, a);
+
     // For all we calculate LocCurrFact = start * (start + 1) * ... * (end - 2) * (end - 1)
     mpz_mul_ui(LocCurrFact, LocCurrFact, start);
-
 
 
     if(rank) {
