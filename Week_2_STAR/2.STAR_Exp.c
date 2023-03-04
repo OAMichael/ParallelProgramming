@@ -4,12 +4,7 @@
 #include <string.h>
 #include <math.h>
 #include <stdint.h>
-#include <stdbool.h>
-#include <time.h>
-#include <assert.h>
 #include "gmp/gmp.h"
-
-
 
 
 static inline int CalculateMaxN(const int N) {
@@ -30,9 +25,9 @@ static inline int CalculateMaxN(const int N) {
 
 static inline void mpz_set_ull(mpz_t n, int_fast64_t ull)
 {
-    mpz_set_ui(n, (unsigned int)(ull >> 32)); /* n = (unsigned int)(ull >> 32) */
-    mpz_mul_2exp(n, n, 32);                   /* n <<= 32 */
-    mpz_add_ui(n, n, (unsigned int)ull);      /* n += (unsigned int)ull */
+    mpz_set_ui(n, (unsigned int)(ull >> 32));
+    mpz_mul_2exp(n, n, 32);
+    mpz_add_ui(n, n, (unsigned int)ull);
 }
 
 
@@ -84,10 +79,6 @@ int main(int argc, char* argv[]) {
             end   += (MaxFact % commsize);
         }
     }
-
-    //int_fast64_t a = end - 1;
-    //int_fast64_t LocSumUint = end;
-
     mpz_t a_mpz;
     mpz_init_set_ui(a_mpz, end - 1);
 
@@ -99,24 +90,11 @@ int main(int argc, char* argv[]) {
     mpz_init_set_ui(LocCurrFact, 1);
 
     mpz_t LocSum;
-    //mpz_init_set_ui(LocSum, end);
-    //mpz_init(LocSum);
     mpz_init_set_ui(LocSum, 0);
 
-    
-
-    
-    //clock_t start_time = clock();
-    
 
     for(int i = end - 2; i > start; i--) {
-        if(/*a > UINT64_MAX / (int_fast64_t)i */ i % 8192 == 0) {
-            //mpz_addmul_ui(LocSum, LocCurrFact, LocSumUint);
-            //mpz_mul_ui(LocCurrFact, LocCurrFact, a);
-
-            //a = (int_fast64_t)i;
-            //LocSumUint = a;
-
+        if(i % 8192 == 0) {
             mpz_addmul(LocSum, LocCurrFact, S_mpz);
             mpz_mul(LocCurrFact, LocCurrFact, a_mpz);
 
@@ -126,81 +104,17 @@ int main(int argc, char* argv[]) {
         else {
             mpz_mul_ui(a_mpz, a_mpz, i);
             mpz_add(S_mpz, S_mpz, a_mpz);
-            //a *= (int_fast64_t)i;
-            //LocSumUint += a;
         }
     }
 
-    //mpz_addmul_ui(LocSum, LocCurrFact, LocSumUint);
-    //mpz_mul_ui(LocCurrFact, LocCurrFact, a);
     mpz_addmul(LocSum, LocCurrFact, S_mpz);
     mpz_mul(LocCurrFact, LocCurrFact, a_mpz);
+    mpz_clears(a_mpz, S_mpz, NULL);
     
-    //clock_t end_time = clock();
-    //printf("Process %d: main loop time elapsed: %lf\n", rank, ((double)(end_time - start_time))/CLOCKS_PER_SEC);
-
-    //MPI_Finalize();
-    //return 0;
-    
-
-
-    /*
-    for(int i = end - 2; i > start; i--) {
-        if(a > UINT64_MAX / (uint64_t)i) {
-            mpz_mul_ui(LocCurrFact, LocCurrFact, a);
-            mpz_addmul_ui(LocSum, LocCurrFact, i);
-            a = (uint64_t)i;
-        }
-        else {
-            a *= (uint64_t)i;
-            mpz_addmul_ui(LocSum, LocCurrFact, a);
-        }
-        mpz_mul_ui(LocCurrFact, LocCurrFact, i);
-    }
-    mpz_mul_ui(LocCurrFact, LocCurrFact, a);
-    */
-    
-    /*
-    for(int i = end - 2; i > start; i--) {
-        if(!isOverflow) {
-            if(a > UINT64_MAX / (uint64_t)i) {
-                isOverflow = true;
-                mpz_set_ui(LocCurrFact, a);
-                //mpz_set_ui(LocSum, LocSumUint);
-
-                mpz_mul_ui(LocCurrFact, LocCurrFact, i);
-                mpz_add(LocSum, LocSum, LocCurrFact);
-
-
-                //mpz_addmul_ui(LocSum, LocCurrFact, i);
-            }   
-            else {
-                a *= (uint64_t)i;
-                //LocSumUint += a;
-                mpz_add_ui(LocSum, LocSum, a);
-            }
-        }
-        else {
-            mpz_mul_ui(LocCurrFact, LocCurrFact, i);
-            mpz_add(LocSum, LocSum, LocCurrFact);
-        }
-    }
-    */
-
-    //if(!isOverflow)
-        //mpz_set_ui(LocCurrFact, a);
-
-
-
-
 
     // For all we calculate LocCurrFact = start * (start + 1) * ... * (end - 2) * (end - 1)
     mpz_mul_ui(LocCurrFact, LocCurrFact, start);
 
-
-    
-    //clock_t start_time = clock();
-    
 
     if(rank) {
         // For all except first processes we receive largest factorial of PREVIOUS process
@@ -237,16 +151,6 @@ int main(int argc, char* argv[]) {
     }
 
     
-    //clock_t end_time = clock();
-    //printf("Process %d: main loop time elapsed: %lf\n", rank, ((double)(end_time - start_time))/CLOCKS_PER_SEC);
-
-    //MPI_Finalize();
-    //return 0;
-    
-    
-    //clock_t start_time = clock();
-    
-
 
     // By now all processes have value of their maximum factorial stored in LocCurrFact
     // Convert all integer sums to floating point ones and perform division by largest factorial
@@ -264,113 +168,50 @@ int main(int argc, char* argv[]) {
 
 
     mpf_div(LocSum_float, LocSum_float, RankMaxFact_float);
-    //clock_t end_time = clock();
-    //printf("Process %d: main loop time elapsed: %lf\n", rank, ((double)(end_time - start_time))/CLOCKS_PER_SEC);
-
-    //MPI_Finalize();
-    //return 0;
-    mpz_clear(LocCurrFact);
-    mpz_clear(LocSum);
-    mpf_clear(RankMaxFact_float);
     
+    mpz_clears(LocCurrFact, LocSum, NULL);    
+    mpf_clear(RankMaxFact_float);
 
 
-    //clock_t start_time = clock();
-    /*
-    // Send sums from all processes to 0's process
     if(rank) {
+        MPI_Send(&LocSum_float->_mp_prec, 1, MPI_INT,  0, 0, MPI_COMM_WORLD);
+        MPI_Send(&LocSum_float->_mp_size, 1, MPI_INT,  0, 0, MPI_COMM_WORLD);
+        MPI_Send(&LocSum_float->_mp_exp,  1, MPI_LONG, 0, 0, MPI_COMM_WORLD);
 
-        char* buf = (char*)calloc(N + 5, sizeof(char));
 
-        char* formatStr = (char*)calloc(5 + strlen(argv[1]) + 1, sizeof(char));
-        snprintf(formatStr, 5 + strlen(argv[1]) + 1, "%%.%dFf", N + 2);
+        int tmpLimbsSize = sizeof(LocSum_float->_mp_d[0]) * LocSum_float->_mp_size;
 
-        gmp_snprintf(buf, N + 5, formatStr, LocSum_float);
-        free(formatStr);
+        MPI_Send(&tmpLimbsSize, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 
-        MPI_Send(buf, strlen(buf) + 1, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
-        free(buf);
-    }
-    if(!rank) {
-        // Add 1 to first process because we need to take into account 0! = 1
-        mpf_add_ui(LocSum_float, LocSum_float, 1);
+        MPI_Send((char*)(LocSum_float->_mp_d), tmpLimbsSize, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
 
-        // Now accumulate all sums from all processes
-        // Still valid if we have only 1 process
-        for(int i = 1; i < commsize; i++) {
-
-            MPI_Status status;
-            int recvLength;
-            MPI_Probe(i, 0, MPI_COMM_WORLD, &status);
-
-            MPI_Get_count(&status, MPI_CHAR, &recvLength);
-
-            char* strSum_i = (char*)calloc(recvLength, sizeof(char));
-
-            MPI_Recv(strSum_i, recvLength, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-            mpf_t Sum_i;
-            mpf_init_set_str(Sum_i, strSum_i, 10);
-            free(strSum_i);
-
-            mpf_add(LocSum_float, LocSum_float, Sum_i);
-            mpf_clear(Sum_i);
-            
-        }
-
-        
-        // Make nice looking format string. strlen(argv[1]) + 1 because N can be 999, so N + 1 = 1000
-        // Allocate [14 + strlen(argv[1])] bytes to contain format string: 
-        // %%.      -- 3 bytes
-        // %d       -- itoa(N + 1) <= strlen(argv[1]) + 1
-        // Ff       -- 2 bytes
-        // \b \b\n  -- 2 + 1 + 2 + 2 = 7 bytes
-        // Total: <= 13 + strlen(argv[1])
-        // +1 for '\0'
-        char* formatStr = (char*)calloc(14 + strlen(argv[1]), sizeof(char));
-
-        snprintf(formatStr, 13 + strlen(argv[1]), "%%.%dFf\b \b\n", N + 1);
-        gmp_printf(formatStr, LocSum_float);
-
-        free(formatStr);
         mpf_clear(LocSum_float);
-    }
-    */
-
-    if(rank) {
-        mp_exp_t SendExp;
-        char* SendBuf = mpf_get_str(NULL, &SendExp, 32, ceil(N * 0.7), LocSum_float);
-        SendExp *= -1;
-        MPI_Send(&SendExp, 1, MPI_LONG, 0, 0, MPI_COMM_WORLD);
-        MPI_Send(SendBuf, strlen(SendBuf) + 1 - SendExp, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
     }
     else {
         mpf_add_ui(LocSum_float, LocSum_float, 1);
 
-        mp_exp_t RecvExp;
-
-        mpf_t Sum_i;
-        mpf_init(Sum_i);
-
-        int recvLength = ceil(N * 0.7) + 3;
-        char* strSum_i = (char*)calloc(recvLength + 1, sizeof(char));
-        strSum_i[0] = '0';
-        strSum_i[1] = '.';
-
+        mpf_t Sum_i;        
         for(int i = 1; i < commsize; i++) {
-            MPI_Recv(&RecvExp, 1, MPI_LONG, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            for(int j = 2; j < 2 + RecvExp; j++)
-                strSum_i[j] = '0';
 
-            MPI_Recv(strSum_i + 2 + RecvExp, recvLength - RecvExp, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(&Sum_i->_mp_prec, 1, MPI_INT,  i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(&Sum_i->_mp_size, 1, MPI_INT,  i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(&Sum_i->_mp_exp,  1, MPI_LONG, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-            mpf_set_str(Sum_i, strSum_i, 32);
+
+            int tmpSize;
+            
+            MPI_Recv(&tmpSize, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+            mp_limb_t* tmpLimbs = (mp_limb_t*)calloc(tmpSize, sizeof(char));
+    
+            MPI_Recv((char*)(tmpLimbs), tmpSize, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    
+            Sum_i->_mp_d = tmpLimbs;       
+
             mpf_add(LocSum_float, LocSum_float, Sum_i);
+            free(tmpLimbs);
         }
-        free(strSum_i);
-
-        mpf_clear(Sum_i);
-
+        
         char* formatStr = (char*)calloc(14 + strlen(argv[1]), sizeof(char));
 
         snprintf(formatStr, 13 + strlen(argv[1]), "%%.%dFf\b \b\n", N + 1);
@@ -379,10 +220,6 @@ int main(int argc, char* argv[]) {
         free(formatStr);
         mpf_clear(LocSum_float);
     }
-
-    //clock_t end_time = clock();
-    //printf("Process %d: main loop time elapsed: %lf\n", rank, ((double)(end_time - start_time))/CLOCKS_PER_SEC);
-
 
     // Finalizing MPI
     MPI_Finalize();
