@@ -1,6 +1,6 @@
 CC = mpicc
 
-all: FirstWeek SecondWeekStar ThirdWeek
+all: FirstWeek SecondWeekStar ThirdWeek Lab_1
 
 FirstWeek:
 	mkdir -p ./build/
@@ -22,6 +22,11 @@ ThirdWeek:
 	$(CC) ./Week_3/3.1_SendFunctions.c  	-o ./build/3.1_SendFunctions.exe
 	$(CC) ./Week_3/3.2_ReciprocalSumComm.c 	-o ./build/3.2_ReciprocalSumComm.exe
 
+
+Lab_1:
+	mkdir -p ./build/
+
+	$(CC) ./Lab1/Lab1.c -O3 -lm -o ./build/Lab1.exe
 
 .SILENT clean:
 	rm -rf */*.exe
