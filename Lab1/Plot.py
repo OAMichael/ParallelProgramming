@@ -27,7 +27,7 @@ def main():
 	u = np.array(df.iloc[:, 2].tolist())
 
 	
-	df_par = pd.read_csv("../build/HeatEqPar.txt", sep=" ")
+	df_par = pd.read_csv("../build/HeatEqTest.txt", sep=" ")
 	df_par.sort_values(by=['t', 'x'], inplace=True)
 
 	t_par = np.array(df_par.iloc[:, 0].tolist())
