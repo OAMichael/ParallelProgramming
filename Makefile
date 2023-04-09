@@ -1,6 +1,6 @@
 CC = mpicc
 
-all: FirstWeek SecondWeekStar ThirdWeek Lab_1 FifthWeek
+all: FirstWeek SecondWeekStar ThirdWeek Lab_1 FifthWeek SixthWeek
 
 FirstWeek:
 	mkdir -p ./build/
@@ -39,6 +39,11 @@ FifthWeek:
 	$(CC) ./Week_5_STAR/5.3_FilesWithMPI.c  -o ./build/5.3_FilesWithMPI.exe
 
 
+SixthWeek:
+	mkdir -p ./build/
+
+	$(CC) ./Week_6_STAR/6.1_Sort.c  		-o ./build/6.1_Sort.exe
+	gcc   ./Week_6_STAR/6.1_GenerateArray.c -o ./build/6.1_GenerateArray.exe
 
 .SILENT clean:
 	rm -rf */*.exe

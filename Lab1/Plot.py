@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 import pandas as pd
 
 
-speedup_effiency_plot = True
+speedup_effiency_plot = False
 
 processes    = [1, 		2, 		3, 		4, 		5, 		6, 		7, 		8]
 times        = []

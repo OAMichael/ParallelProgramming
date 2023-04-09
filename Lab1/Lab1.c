@@ -121,8 +121,8 @@
 
 
 // Define some problem specific constants
-#define K 4001
-#define M 4001
+#define K 401
+#define M 401
 
 
 const double a = 2.0;
