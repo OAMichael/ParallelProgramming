@@ -1,7 +1,8 @@
 MPICC = mpicc
 CC = gcc
+CXX = g++
 
-all: FirstWeek SecondWeekStar ThirdWeek Lab_1 FifthWeek SixthWeek SeventhWeek
+all: FirstWeek SecondWeekStar ThirdWeek Lab_1 FifthWeek SixthWeek SeventhWeek EighthWeek
 
 FirstWeek:
 	mkdir -p ./build/
@@ -53,6 +54,11 @@ SeventhWeek:
 	$(CC) 	 ./Week_7/7.1_HelloWorldThreads.c  		-lpthread -o ./build/7.1_HelloWorldThreads.exe
 	$(CC) 	 ./Week_7/7.2_ReciprocalSumThreads.c  	-lpthread -o ./build/7.2_ReciprocalSumThreads.exe
 	$(CC) 	 ./Week_7/7.3_VariableAccess.c  		-lpthread -o ./build/7.3_VariableAccess.exe
+
+
+EighthWeek:
+	$(CXX) 	 ./Week_8/8.1_Integral.cpp 		    -O3 -lpthread -o ./build/8.1_Integral.exe
+
 
 .SILENT clean:
 	rm -rf */*.exe
