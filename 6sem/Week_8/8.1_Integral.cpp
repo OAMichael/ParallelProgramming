@@ -14,7 +14,7 @@ int NUM_THREADS = 4;
 
 
 constexpr double start_point = 0.0;
-constexpr double end_point   = 0.99999999;
+constexpr double end_point   = 0.9999;
 
 
 struct IntegrateSegmentInfo {
