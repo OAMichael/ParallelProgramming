@@ -4,10 +4,6 @@
 #define NUM_THREADS 4
 
 
-#define USE_COPYIN
-#define USE_COPYPRIVATE
-
-
 int var_0 = 0;
 int var_1 = 0;
 

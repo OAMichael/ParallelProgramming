@@ -32,9 +32,11 @@ int main(int argc, char* argv[])
     omp_set_dynamic(0);
     omp_set_num_threads(NUM_THREADS);
 
+    printf("Thread Iteration\n");
+
     #pragma omp parallel for PARALLEL_STATEMENT
     for(int i = 0; i < NUM_ITERS; i++) {
-        printf("Thread %d: iteration = %d\n", omp_get_thread_num(), i);
+        printf("%d %d\n", omp_get_thread_num(), i);
     }
 
     return 0;
