@@ -2,7 +2,7 @@ MPICC = mpicc
 CC = gcc
 CXX = g++
 
-all: 6sem_Lesson_1 6sem_Lesson_2 6sem_Lesson_3 6sem_Lesson_4 6sem_Lesson_5 6sem_Lesson_6 6sem_Lesson_7 6sem_Lesson_8 7sem_Lesson_1 7sem_Lesson_2 7sem_Lesson_3
+all: 6sem_Lesson_1 6sem_Lesson_2 6sem_Lesson_3 6sem_Lesson_4 6sem_Lesson_5 6sem_Lesson_6 6sem_Lesson_7 6sem_Lesson_8 7sem_Lesson_1 7sem_Lesson_2 7sem_Lesson_3 7sem_Lesson_4
 
 6sem_Lesson_1:
 	mkdir -p ./build/
@@ -94,6 +94,13 @@ all: 6sem_Lesson_1 6sem_Lesson_2 6sem_Lesson_3 6sem_Lesson_4 6sem_Lesson_5 6sem_
 
 	$(CXX)   ./7sem/Week_3/3.1_MatrixMul.cpp 	-fopenmp -o ./build/7sem/3.1_MatrixMul.exe
 	$(CC)    ./7sem/Week_3/3.2_UntiedTasks.c 	-fopenmp -o ./build/7sem/3.2_UntiedTasks.exe
+
+
+7sem_Lesson_4:
+	mkdir -p ./build/
+	mkdir -p ./build/7sem/
+
+	$(CC)   ./7sem/Week_4/4.1_SortOMP.c 	-fopenmp -o ./build/7sem/4.1_SortOMP.exe
 
 .SILENT clean:
 	rm -rf */*.exe

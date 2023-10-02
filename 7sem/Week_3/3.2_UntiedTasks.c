@@ -56,13 +56,13 @@ void task_danger() {
     // Force scheduling point, safe
     #pragma omp taskyield
 
-    // Line itself is safe but can possibly make g_array[omp_get_thread_num()] < 0
+    // Line itself is safe but can possibly make g_array[omp_get_thread_num()] < 0 or >= NUM_THREADS
     g_array[omp_get_thread_num()] -= omp_get_thread_num();
 
-    // Line itself is safe but at this stage idx can possibly be < 0
+    // Line itself is safe but at this stage idx can possibly be < 0 or >= NUM_THREADS
     int idx = g_array[omp_get_thread_num()];
 
-    // DANGER!!! idx can be < 0 by this moment
+    // DANGER!!! idx can be < 0 or >= NUM_THREADS by this moment
     printf("g_array[%d] = %d\n", idx, g_array[idx]);
 }
 
