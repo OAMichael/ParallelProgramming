@@ -1,4 +1,7 @@
 build/
+.vscode/
 
-*/*.exe
-*/*.o
+**/*.exe
+**/*.o
+**/*.txt
+**/*.dat

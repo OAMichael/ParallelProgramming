@@ -4,7 +4,7 @@ CXX = g++
 
 all: 6sem_Lesson_1 6sem_Lesson_2 6sem_Lesson_3 6sem_Lesson_4 6sem_Lesson_5 \
 	 6sem_Lesson_6 6sem_Lesson_7 6sem_Lesson_8 7sem_Lesson_1 7sem_Lesson_2 \
-	 7sem_Lesson_3 7sem_Lesson_4 7sem_Lesson_5
+	 7sem_Lesson_3 7sem_Lesson_4 7sem_Lesson_5 7sem_Lesson_6
 
 6sem_Lesson_1:
 	mkdir -p ./build/
@@ -109,7 +109,14 @@ all: 6sem_Lesson_1 6sem_Lesson_2 6sem_Lesson_3 6sem_Lesson_4 6sem_Lesson_5 \
 	mkdir -p ./build/
 	mkdir -p ./build/7sem/
 
-	$(CXX)   ./7sem/Week_5/5.1_Strassen.cpp -fopenmp -msse4.1 -march=native -o ./build/7sem/5.1_Strassen.exe
+	$(CXX)   ./7sem/Week_5/5.1_Strassen.cpp -fopenmp -march=native -o ./build/7sem/5.1_Strassen.exe
+
+
+7sem_Lesson_6:
+	mkdir -p ./build/
+	mkdir -p ./build/7sem/
+
+	$(CXX)   ./7sem/Week_6/6.1_FFT.cpp -fopenmp -march=native -o ./build/7sem/6.1_FFT.exe
 
 
 .SILENT clean:
