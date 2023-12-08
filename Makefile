@@ -1,10 +1,12 @@
 MPICC = mpicc
+MPICXX = mpic++
 CC = gcc
 CXX = g++
 
 all: 6sem_Lesson_1 6sem_Lesson_2 6sem_Lesson_3 6sem_Lesson_4 6sem_Lesson_5 \
 	 6sem_Lesson_6 6sem_Lesson_7 6sem_Lesson_8 7sem_Lesson_1 7sem_Lesson_2 \
-	 7sem_Lesson_3 7sem_Lesson_4 7sem_Lesson_5 7sem_Lesson_6
+	 7sem_Lesson_3 7sem_Lesson_4 7sem_Lesson_5 7sem_Lesson_6 7sem_Lesson_7 \
+	 7sem_Lesson_8
 
 6sem_Lesson_1:
 	mkdir -p ./build/
@@ -118,6 +120,25 @@ all: 6sem_Lesson_1 6sem_Lesson_2 6sem_Lesson_3 6sem_Lesson_4 6sem_Lesson_5 \
 
 	$(CXX)   ./7sem/Week_6/6.1_FFT.cpp -fopenmp -march=native -o ./build/7sem/6.1_FFT.exe
 
+
+7sem_Lesson_7:
+	mkdir -p ./build/
+	mkdir -p ./build/7sem/
+
+	$(CXX)   		./7sem/Lab2/BaselineOMP.cpp -fopenmp -o ./build/7sem/BaselineOMP.exe -O2
+	$(MPICXX)   	./7sem/Lab2/BaselineMPI.cpp -o ./build/7sem/BaselineMPI.exe	-O2
+
+	$(MPICXX)   	./7sem/Lab2/Task1_I.cpp -o ./build/7sem/Task1_I.exe -O2
+	$(MPICXX)   	./7sem/Lab2/Task1_J.cpp -o ./build/7sem/Task1_J.exe -O2
+	$(CXX)   		./7sem/Lab2/Task2.cpp -fopenmp -o ./build/7sem/Task2.exe -O2
+	$(CXX)   		./7sem/Lab2/Task3.cpp -fopenmp -o ./build/7sem/Task3.exe -O2
+
+
+7sem_Lesson_8:
+	mkdir -p ./build/
+	mkdir -p ./build/7sem/
+
+	$(CXX) ./7sem/CompTask/CompTask.cpp -fopenmp -o ./build/7sem/CompTask.exe -O2
 
 .SILENT clean:
 	rm -rf */*.exe
